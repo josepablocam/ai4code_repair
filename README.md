@@ -6,6 +6,11 @@ TODO: write
 # Setup
 Run in *nix (test in WSL)
 
+Download data folder from  https://drive.google.com/drive/folders/1lJUFDmIcXu_ZcOUKBdY2iSvVT4_PIKZc?usp=sharing
+
+Store in `./data/`
+
+
 ```bash
 python -m virtualenv env/
 source env/bin/activate

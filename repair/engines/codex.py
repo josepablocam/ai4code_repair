@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Tuple
+import os
 
 import openai
 import numpy as np
@@ -126,7 +127,7 @@ class CodexWithErrorInfo(CodexBaseRepair):
 
     def _get_error_info(self, code: str) -> str:
         if code not in self.error_cache:
-            self.error_cache = gcc_compile(code).error
+            self.error_cache[code] = gcc_compile(code).error
         return self.error_cache[code]
 
     def get_prompt(self, code: str, **kwargs):
@@ -165,8 +166,10 @@ def generate_basic_example_bank(
         entries: List[DeepFixRecord],
         size=100,
         engine=None) -> List[Tuple[DeepFixRecord, str]]:
+    return 
+    # not yet implemented
     if engine is None:
-        engine = CodexWithErrorInfo()
+        engine = CodexWithErrorInfo(os.getenv("OPENAI_API_KEY"))
     example_bank = []
     compile_cache = {}
 
