@@ -39,7 +39,7 @@ note = "[Online; accessed 01-08-2023]"
 
 # TODOs:
 Sunday:
-* Setup CodeBERT-based few-shots
+* Setup CodeBERT-based few-shots (finalizes codex section)
 * Add CodeT5 portion
 * Add text for current portion of tutorial
 
