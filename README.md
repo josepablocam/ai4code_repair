@@ -50,6 +50,8 @@ Next:
 * Any other "stretch" task
 * Pin versions of libs
 * Try out in colab
+* Uber stretch: add in section grmtools (need to add C .y file and then can play with it, extra for students would be
+to turn parser recovery suggestion into repair, and run in benchmark)
 
 
 # FIXME: are locations participants can try some extensions :)
