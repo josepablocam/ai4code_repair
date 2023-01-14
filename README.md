@@ -27,7 +27,6 @@ unzip deepfix.zip
 mv prutor*/*.gz .
 gunzip *.gz
 
-
 https://bitbucket.org/iiscseal/deepfix/src/master/
 @misc{deepfix2017repository,
 author = {Gupta, Rahul and Pal, Soham and Kanade, Aditya and Shevade, Shirish},
@@ -38,13 +37,19 @@ note = "[Online; accessed 01-08-2023]"
 }
 
 
-
 # TODOs:
-* Setup full evaluation for benchmarks
-* Setup few-shot section for Codex
-    - Fixed few-shots
-    - Random few-shots
-    - CodeBERT-based few-shots
-
+Sunday:
+* Setup CodeBERT-based few-shots
 * Add CodeT5 portion
 * Add text for current portion of tutorial
+
+
+Next:
+* Clean up tutorial and add references/pointers for more problems
+* Setup skeleton for fine-tuning CodeBERT (to perform target similarity tuning)
+* Any other "stretch" task
+* Pin versions of libs
+* Try out in colab
+
+
+# FIXME: are locations participants can try some extensions :)

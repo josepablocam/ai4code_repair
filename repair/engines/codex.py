@@ -1,10 +1,18 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Callable
 import os
 
 import openai
 import numpy as np
+import tiktoken
+import tqdm
 
-from repair.utils import gcc_compile, CompileResult, DeepFixRecord
+from repair.utils import (
+    gcc_compile,
+    CompileResult,
+    RepairTaskRecord,
+    RepairEngine,
+    BenchmarkRunner,
+)
 
 
 class CodexEngine(object):
@@ -67,7 +75,20 @@ class CodexEngine(object):
             return None
 
 
-class CodexBaseRepair(object):
+class CodexRepair(RepairEngine, BenchmarkRunner):
+
+    def run_benchmark(
+        self,
+        cases: List[RepairTaskRecord],
+        **kwargs,
+    ) -> List[List[str]]:
+        predictions = [
+            self.repair(t.source, **kwargs) for t in tqdm.tqdm(cases)
+        ]
+        return [[p["repair"] for p in group] for group in predictions]
+
+
+class CodexBaseRepair(CodexRepair):
     """
     Based on https://beta.openai.com/examples/default-fix-python-bugs
     """
@@ -107,6 +128,10 @@ class CodexBaseRepair(object):
         return unique_repair_dicts
 
     def repair(self, code: str, **kwargs):
+        # FIXME: warn if number of tokens too few for length of code
+        # or set to num tokens + K
+        # Use: https://github.com/openai/tiktoken , which is fast openai tokenizer
+        # to estimate tokens for code and pass in as maxtokens=<val>
         prompt = self.get_prompt(code, **kwargs)
         completion_dicts = self.codex.complete(prompt, **kwargs)
         if completion_dicts is None:
@@ -142,59 +167,62 @@ class CodexWithErrorInfo(CodexBaseRepair):
         return prompt
 
 
-class CodexWithFewShots(CodexBaseRepair):
-    """
-    Based on https://beta.openai.com/examples/default-fix-python-bugs
-    """
+class FewShotSelector(object):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, example_bank: List[RepairTaskRecord]):
+        self.example_bank = example_bank
+
+    def select_shots(self, code: str, k: int) -> List[RepairTaskRecord]:
+        raise NotImplementedError()
+
+
+class FixedFewShots(FewShotSelector):
+
+    def select_shots(self, code: str, k: int) -> List[RepairTaskRecord]:
+        return self.example_bank[:k]
+
+
+class RandomFewShots(FewShotSelector):
+
+    def select_shots(self, code: str, k: int) -> List[RepairTaskRecord]:
+        return np.random.choice(self.example_bank,
+                                size=min(len(self.example_bank), k),
+                                replace=False)
+
+
+# FIXME: implement a similarity-based shot selector using
+# some of the utlities in codesimilarity.py
+class SimilarityFewShots(FewShotSelector):
+
+    def __init__(self, example_bank: List[RepairTaskRecord]):
+        raise NotImplementedError()
+
+    def select_shots(self, code: str, k: int) -> List[RepairTaskRecord]:
+        raise NotImplementedError()
+
+
+class CodexWithFewShots(CodexBaseRepair):
+
+    def __init__(self, shot_selector: FewShotSelector, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.shot_selector = shot_selector
         self.prompt_helper = CodexWithErrorInfo(*args, **kwargs)
 
     def get_prompt(self, code: str, **kwargs):
-        few_shots = kwargs.get('fewshots', None) or []
+        few_shots = self.shot_selector.select_shots(code, kwargs.get("k", 3))
         prompt = ""
-        for (buggy_shot, fixed_shot) in few_shots:
-            prompt += self.prompt_helper.get_prompt(buggy_shot,
-                                                    fixed=fixed_shot)
+        for shot in few_shots:
+            prompt += self.prompt_helper.get_prompt(shot.source,
+                                                    fixed=shot.target)
 
         prompt += self.prompt_helper.get_prompt(code)
         return prompt
 
 
-def generate_basic_example_bank(
-        entries: List[DeepFixRecord],
-        size=100,
-        engine=None) -> List[Tuple[DeepFixRecord, str]]:
-    return 
-    # not yet implemented
-    if engine is None:
-        engine = CodexWithErrorInfo(os.getenv("OPENAI_API_KEY"))
-    example_bank = []
-    compile_cache = {}
+GPT_TOKENIZER = None
 
-    for entry in entries:
-        if len(example_bank) >= size:
-            return example_bank
-        results = engine.repair(entry.code, n=5)
-        for r in results:
-            candidate_code = r["repair"]
-            if candidate_code not in compile_cache:
-                compile_cache[candidate_code] = gcc_compile(candidate_code)
-            if compile_cache[candidate_code]:
-                # satisfied the compiler
-                example = (entry, candidate_code)
-                example_bank.append(example)
-                # add single example per case
-                break
-    return example_bank
-
-
-def create_random_fewshots(target: List[DeepFixRecord],
-                           all_programs: List[DeepFixRecord]):
-    pass
-
-
-def create_embedding_fewshots(target: List[DeepFixRecord],
-                              all_programs: List[DeepFixRecord]):
-    pass
+def gpt_tokenize(code: str) -> List[str]:
+    global GPT_TOKENIZER
+    if GPT_TOKENIZER is None:
+        GPT_TOKENIZER = tiktoken.get_encoding("gpt2")
+    return GPT_TOKENIZER.encode(code)
