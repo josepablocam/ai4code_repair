@@ -38,20 +38,15 @@ note = "[Online; accessed 01-08-2023]"
 
 
 # TODOs:
-Sunday:
-* Setup CodeBERT-based few-shots (finalizes codex section)
-* Add CodeT5 portion
-* Add text for current portion of tutorial
-
-
-Next:
+* Finetuned CodeT5 section
+* Add text
+* Add grmtools section: (need to add C .y file and then can play with it, extra for students would be
+to turn parser recovery suggestion into repair, and run in benchmark)
 * Clean up tutorial and add references/pointers for more problems
+* Add tests
 * Setup skeleton for fine-tuning CodeBERT (to perform target similarity tuning)
 * Any other "stretch" task
 * Pin versions of libs
 * Try out in colab
-* Uber stretch: add in section grmtools (need to add C .y file and then can play with it, extra for students would be
-to turn parser recovery suggestion into repair, and run in benchmark)
-
 
 # FIXME: are locations participants can try some extensions :)
