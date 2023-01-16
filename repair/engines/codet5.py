@@ -3,7 +3,7 @@ import re
 from typing import List, Dict
 
 from transformers import AutoTokenizer, T5ForConditionalGeneration
-
+import torch
 
 from repair.utils import BenchmarkRunner, RepairEngine, gcc_compile, get_torch_device
 
@@ -17,6 +17,8 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
     def __init__(self):
         self.tokenizer = AutoTokenizer.from_pretrained('Salesforce/codet5-base')
         self.model = T5ForConditionalGeneration.from_pretrained('Salesforce/codet5-base')
+        self.model = self.model.to(get_torch_device())
+        self.model.eval()
 
     def _localize_line(self, code):
         result = gcc_compile(code)
@@ -82,14 +84,15 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
         ).to(get_torch_device())
         # FIXME: we can set the average length of mask_token to be average length
         # of each line tokenized
-        generated = self.model.generate(
-            **encoded_inputs, 
-            max_length=20 * len(mask_tokens),
-            num_beams=kwargs.get("num_beams", 3),
-            # default to as many as beam size
-            num_return_sequences=kwargs.get("num_return_sequences", kwargs.get("num_beams", 3)),
-            early_stopping=kwargs.get("early_stopping", True),
-        )
+        with torch.no_grad():
+            generated = self.model.generate(
+                **encoded_inputs, 
+                max_length=20 * len(mask_tokens),
+                num_beams=kwargs.get("num_beams", 3),
+                # default to as many as beam size
+                num_return_sequences=kwargs.get("num_return_sequences", kwargs.get("num_beams", 3)),
+                early_stopping=kwargs.get("early_stopping", True),
+            )
         results = []
         for seq in generated:
             decoded = self.tokenizer.decode(seq, skip_special_tokens=False)
