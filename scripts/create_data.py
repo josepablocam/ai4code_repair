@@ -98,7 +98,7 @@ def add_noise(code: str) -> Tuple[str, str]:
             # just delimiters
             options = ["(", ")", "{", "}", ";", "."]
             new_char = random.choice(options)
-            new_code = code[:ix1] + new_char + code[(ix1 + 1):]
+            new_code = code[:ix1] + new_char + code[ix1:]
 
         return chosen_op, new_code
 
