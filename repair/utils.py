@@ -11,6 +11,7 @@ import editdistance
 from pygments.lexers import CLexer
 import tree_sitter
 import numpy as np
+import torch
 from tree_sitter import Language, Parser
 import pandas as pd
 import zss
@@ -284,3 +285,7 @@ def run_benchmark(system: BenchmarkRunner, **kwargs):
     annot = run_basic_annotation(predicted, buggy)
     summary = basic_results_table(annot)
     return summary, annot
+
+
+def get_torch_device():
+    return "cuda:0" if torch.cuda.is_available() else "cpu"

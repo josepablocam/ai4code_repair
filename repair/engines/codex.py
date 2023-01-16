@@ -13,7 +13,7 @@ from repair.utils import (
     RepairEngine,
     BenchmarkRunner,
 )
-
+from repair.codesimilarity import CodeBertEmbedder
 
 class CodexEngine(object):
 
@@ -190,15 +190,35 @@ class RandomFewShots(FewShotSelector):
                                 replace=False)
 
 
-# FIXME: implement a similarity-based shot selector using
-# some of the utlities in codesimilarity.py
+
 class SimilarityFewShots(FewShotSelector):
 
-    def __init__(self, example_bank: List[RepairTaskRecord]):
-        raise NotImplementedError()
+    def __init__(self, example_bank: List[RepairTaskRecord], verbose=False):
+        self.example_bank = list(example_bank)
+        self.embedder = CodeBertEmbedder()
+        if not verbose:
+            self.embedded_bank = self._get_norm_embedding([e.source for e in self.example_bank])
+        else:
+            # WARNING: just for debugging/seeing progress...
+            res = [self._get_norm_embedding([e.source]) for e in tqdm.tqdm(self.example_bank)]
+            self.embedded_bank = np.vstack(res)
+
+    def _get_norm_embedding(self, programs: List[str]) -> np.ndarray:
+        vectors = self.embedder.embed(programs).numpy()
+        normed_vectors = vectors / np.linalg.norm(vectors, ord=2, axis=1).reshape(-1, 1)
+        return normed_vectors
+
+    def _retrieve_nearest_k_ixs(self, vec: np.ndarray, k: int) -> List[int]:
+        # FIXME: replace with a fast approximate search engine like FAISS to scale
+        scores = np.matmul(self.embedded_bank, vec.T).flatten()
+        top_ixs = np.argsort(scores)[-k:]
+        return top_ixs
 
     def select_shots(self, code: str, k: int) -> List[RepairTaskRecord]:
-        raise NotImplementedError()
+        vec = self._get_norm_embedding([code])
+        ixs = self._retrieve_nearest_k_ixs(vec, k)
+        chosen = [self.example_bank[i] for i in ixs]
+        return chosen
 
 
 class CodexWithFewShots(CodexBaseRepair):
