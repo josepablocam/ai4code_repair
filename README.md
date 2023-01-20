@@ -38,6 +38,7 @@ note = "[Online; accessed 01-08-2023]"
 
 
 # TODOs:
+* Add zero-shot CodeT5 section
 * Finetuned CodeT5 section
 * Add text
 * Add grmtools section: (need to add C .y file and then can play with it, extra for students would be

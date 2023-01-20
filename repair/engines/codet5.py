@@ -1,11 +1,19 @@
 import os
 import re
-from typing import List, Dict
+from typing import List, Dict, Union
 
+import numpy as np
 from transformers import AutoTokenizer, T5ForConditionalGeneration
 import torch
+import tqdm
 
-from repair.utils import BenchmarkRunner, RepairEngine, gcc_compile, get_torch_device
+from repair.utils import (
+    BenchmarkRunner,
+    RepairEngine,
+    gcc_compile,
+    get_torch_device,
+    RepairTaskRecord,
+)
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
@@ -14,9 +22,12 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
     """
     https://arxiv.org/pdf/2207.08281.pdf
     """
+
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained('Salesforce/codet5-base')
-        self.model = T5ForConditionalGeneration.from_pretrained('Salesforce/codet5-base')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            'Salesforce/codet5-base')
+        self.model = T5ForConditionalGeneration.from_pretrained(
+            'Salesforce/codet5-base')
         self.model = self.model.to(get_torch_device())
         self.model.eval()
 
@@ -25,7 +36,7 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
         if result.ok:
             raise Exception("To localize must have compile error")
 
-        line_regex = re.compile(".c:([0-9]+):[0-9]+")
+        line_regex = re.compile(".c:([0-9]+):[0-9]+: error:")
         matches = line_regex.findall(result.error)
         # turn to 0-indexed
         line_nums = set(int(m) - 1 for m in matches)
@@ -34,8 +45,7 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
             # FIXME: better fall back
             return [0]
         return line_nums
-        
-    
+
     def _add_code_masks(self, code):
         # FIXME: extend to not mask whole line
         # but just range indicated by error message
@@ -44,11 +54,12 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
         mask_tokens = []
         for ix, l_ix in enumerate(line_nums):
             mask_token = f"<extra_id_{ix}>"
-            lines[l_ix] = mask_token #+ ";"
+            lines[l_ix] = mask_token  #+ ";"
             mask_tokens.append(mask_token)
         return ["\n".join(lines), mask_tokens]
 
-    def _decoded_to_mask_tokens_map(self, decoded: str, mask_tokens: List[str]):
+    def _decoded_to_mask_tokens_map(self, decoded: str,
+                                    mask_tokens: List[str]):
         mapping = {}
         for mask_token in mask_tokens:
             start_ix = decoded.find(mask_token)
@@ -61,47 +72,91 @@ class CodeT5ClozeRepair(RepairEngine, BenchmarkRunner):
                 # rest of string
                 mask_value = decoded[start_ix:]
             # remove any special tokens
-            special_tokens = [self.tokenizer.eos_token, self.tokenizer.pad_token]
+            special_tokens = [
+                self.tokenizer.eos_token, self.tokenizer.pad_token
+            ]
             for special_tok in special_tokens:
                 mask_value = mask_value.replace(special_tok, "")
             mapping[mask_token] = mask_value
         return mapping
 
-    def _decode_code_with_cloze(self, code: str, mask_token_map: Dict[str, str]):
+    def _fill_code_cloze(self, code: str, mask_token_map: Dict[str,
+                                                                      str]):
         for token_name, token_value in mask_token_map.items():
             code = code.replace(token_name, token_value)
         return code
 
-    def repair(self, code: str, **kwargs):
+    def repair(self, code: Union[str, List[str]], **kwargs):
+        if isinstance(code, str):
+            str_inputs = [code]
+        else:
+            assert isinstance(code, list) and isinstance(code[0], str)
+            str_inputs = code
+
         # Replace entire line that has error
         # extract line from errormessage
-        new_code, mask_tokens = self._add_code_masks(code)
+        batched_mask_tokens = []
+        batched_masked_code = []
+
+        for code in str_inputs:
+            new_code, mask_tokens = self._add_code_masks(code)
+            batched_masked_code.append(new_code)
+            batched_mask_tokens.append(mask_tokens)
+
+        num_inputs = len(str_inputs)
+
+        # run as batch with codet5
         encoded_inputs = self.tokenizer(
-            new_code,
+            batched_masked_code,
             return_tensors='pt',
             truncation=True,
             padding='max_length',
         ).to(get_torch_device())
-        # FIXME: we can set the average length of mask_token to be average length
-        # of each line tokenized
+
+        # FIXME: set max length to be some reasonable value based on average length of masked line
+        max_length = int(20 * np.ceil(
+            np.mean([len(ts) for ts in batched_mask_tokens])))
         with torch.no_grad():
             generated = self.model.generate(
-                **encoded_inputs, 
-                max_length=20 * len(mask_tokens),
+                **encoded_inputs,
+                max_length=max_length,
                 num_beams=kwargs.get("num_beams", 3),
                 # default to as many as beam size
-                num_return_sequences=kwargs.get("num_return_sequences", kwargs.get("num_beams", 3)),
+                num_return_sequences=kwargs.get("num_return_sequences",
+                                                kwargs.get("num_beams", 3)),
                 early_stopping=kwargs.get("early_stopping", True),
             )
+            # TODO: check better reshaping
+            batched_generated = generated.reshape(num_inputs, -1,
+                                                  generated.shape[-1])
+
         results = []
-        for seq in generated:
-            decoded = self.tokenizer.decode(seq, skip_special_tokens=False)
-            mask_token_map = self._decoded_to_mask_tokens_map(decoded, mask_tokens)
-            filled_code = self._decode_code_with_cloze(new_code, mask_token_map)
-            results.append({"repair": filled_code})
+        # create repairs by replacing masks in masked code with the mask values generated by codet5
+        for seqs, masked_code, mask_tokens in zip(batched_generated, batched_masked_code, batched_mask_tokens):
+            acc = []
+            for seq in seqs:
+                decoded = self.tokenizer.decode(seq, skip_special_tokens=False)
+                mask_token_map = self._decoded_to_mask_tokens_map(
+                    decoded, mask_tokens)
+                filled_code = self._fill_code_cloze(
+                    masked_code, mask_token_map)
+                acc.append({"repair": filled_code})
+            results.append(acc)
         return results
+
+    def run_benchmark(
+        self,
+        cases: List[RepairTaskRecord],
+        **kwargs,
+    ) -> List[List[str]]:
+        all_sources = [t.source for t in cases]
+        if kwargs.get("verbose", False):
+            # show progress bar, may help if slow (i.e. no gpu)
+            predictions = [self.repair(s)[0] for s in tqdm.tqdm(all_sources)]
+        else:
+            predictions = self.repair(all_sources, **kwargs)
+        return [[p["repair"] for p in group] for group in predictions]
 
 
 class CodeT5FineTunedRepair(RepairEngine, BenchmarkRunner):
     pass
-
