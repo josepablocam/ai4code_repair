@@ -38,8 +38,10 @@ note = "[Online; accessed 01-08-2023]"
 
 
 # TODOs:
-* Add zero-shot CodeT5 section
-* Finetuned CodeT5 section
+* Finalize CodeT5 fine tuning section
+    - Run on collab
+    - Tensorboard fix
+    - Upload finetuned model for us
 * Add text
 * Add grmtools section: (need to add C .y file and then can play with it, extra for students would be
 to turn parser recovery suggestion into repair, and run in benchmark)
