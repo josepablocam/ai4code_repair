@@ -39,8 +39,8 @@ note = "[Online; accessed 01-08-2023]"
 
 # TODOs:
 * Finalize CodeT5 fine tuning section
+    - Tensorboard fix (and visualize in notebook)
     - Run on collab
-    - Tensorboard fix
     - Upload finetuned model for us
 * Add text
 * Add grmtools section: (need to add C .y file and then can play with it, extra for students would be

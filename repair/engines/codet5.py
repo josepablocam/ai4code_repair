@@ -2,7 +2,7 @@ import os
 import logging
 import re
 import time
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union, Any, Optional
 
 import numpy as np
 from transformers import AutoTokenizer, T5ForConditionalGeneration
@@ -12,7 +12,7 @@ try:
     from torch.utils.tensorboard import SummaryWriter
 except ModuleNotFoundError:
     pass
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader, RandomSampler, TensorDataset
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from repair.utils import (BenchmarkRunner, RepairEngine, gcc_compile,
@@ -31,7 +31,7 @@ class BaseCodeT5Repair(RepairEngine, BenchmarkRunner):
         all_sources = [t.source for t in cases]
         if kwargs.get("verbose", False):
             # show progress bar, may help if slow (i.e. no gpu)
-            predictions = [self.repair(s)[0] for s in tqdm.tqdm(all_sources)]
+            predictions = [self.repair(s, **kwargs)[0] for s in tqdm.tqdm(all_sources)]
         else:
             predictions = self.repair(all_sources, **kwargs)
         return [[p["repair"] for p in group] for group in predictions]
@@ -137,7 +137,7 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
         with torch.no_grad():
             generated = self.model.generate(
                 **encoded_inputs,
-                max_length=max_length,
+                max_length=kwargs.get("max_length", max_length),
                 num_beams=kwargs.get("num_beams", 3),
                 # default to as many as beam size
                 num_return_sequences=kwargs.get("num_return_sequences",
@@ -165,17 +165,20 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
         return results
 
 
-def _load_labeled_dataset_tokenized(cases: List[RepairTaskRecord],
-                                    tokenizer: Any):
+def _load_labeled_dataset_tokenized(
+    cases: List[RepairTaskRecord],
+    tokenizer: Any,
+    max_length: Optional[int] = None,
+):
     source_data, target_data = zip(*[[case.source, case.target]
                                      for case in cases])
     assert not any(e is None for e in target_data), "All data must be labeled"
-    # TODO: only get input_ids?
     encoded_source = tokenizer(
         source_data,
         return_tensors='pt',
         truncation=True,
         padding='max_length',
+        max_length=max_length,
     )['input_ids'].to(get_torch_device())
 
     encoded_target = tokenizer(
@@ -183,10 +186,10 @@ def _load_labeled_dataset_tokenized(cases: List[RepairTaskRecord],
         return_tensors='pt',
         truncation=True,
         padding='max_length',
+        max_length=max_length,
     )['input_ids'].to(get_torch_device())
 
-    # TODO: check if best way to combine
-    return list(zip(encoded_source, encoded_target))
+    return TensorDataset(encoded_source, encoded_target)
 
 
 class CodeT5FineTunedRepair(BaseCodeT5Repair):
@@ -230,7 +233,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         with torch.no_grad():
             generated = self.model.generate(
                 **encoded_inputs,
-                max_length=max_length,
+                max_length=kwargs.get("max_length", max_length),
                 num_beams=kwargs.get("num_beams", 3),
                 # default to as many as beam size
                 num_return_sequences=kwargs.get("num_return_sequences",
@@ -246,7 +249,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         for seqs in batched_generated:
             acc = []
             for seq in seqs:
-                decoded = self.tokenizer.decode(seq, skip_special_tokens=False)
+                decoded = self.tokenizer.decode(seq, skip_special_tokens=True)
                 acc.append({"repair": decoded})
             results.append(acc)
         return results
