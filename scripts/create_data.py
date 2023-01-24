@@ -39,11 +39,11 @@ LIMIT {max_num}
     return progs
 
 
-def create_test_data(conn, max_num=1000, filter_max_gpt_tokens=False):
-    progs = get_programs_with_errors(conn, max_num)
+def create_test_data(conn, num=1000, filter_max_gpt_tokens=False):
+    progs = get_programs_with_errors(conn, max_num=num * 10)
     if filter_max_gpt_tokens:
         progs = filter_to_source_within_gpt_token_max(progs)
-    return progs
+    return progs[:num]
 
 def get_programs_with_no_errors(conn, max_num=10000):
     cursor = conn.cursor()
@@ -129,14 +129,15 @@ def generate_paired_obs(case: RepairTaskRecord) -> Optional[RepairTaskRecord]:
 # for a better training generator
 def create_training_data(
     conn,
-    max_num=1000,
+    num_train=1000,
     ncpus=2,
     exclude: List[RepairTaskRecord] = None,
     filter_max_gpt_tokens=False,
 ):
-    no_errors = get_programs_with_no_errors(conn, max_num=max_num)
+    # query at least 3x to filter out case where we don't introduce noise well
+    no_errors = get_programs_with_no_errors(conn, max_num=num_train * 3)
 
-    # remove any programs that werein our exclude data
+    # remove any programs that were in our exclude data
     if exclude is not None:
         exclude_set = {(e.problem_id, e.user_id) for e in exclude}
         no_errors = [
@@ -162,13 +163,13 @@ def get_args():
                         type=str,
                         help="DeepFix database",
                         default="data/prutor-deepfix-09-12-2017.db")
-    parser.add_argument("--max_test",
+    parser.add_argument("--num_test",
                         type=int,
-                        help="Max number of test cases",
+                        help="Number of test cases",
                         default=100)
-    parser.add_argument("--max_train",
+    parser.add_argument("--num_train",
                         type=int,
-                        help="Max number of train cases",
+                        help="Number of train cases",
                         default=10000)
     parser.add_argument("--seed",
                         type=int,
@@ -197,16 +198,26 @@ def main():
     random.seed(args.seed)
     test_data = create_test_data(
         conn,
-        max_num=args.max_test,
+        num=args.num_test,
         filter_max_gpt_tokens=args.filter_max_gpt_tokens,
     )
-    train_data = create_training_data(
-        conn,
-        max_num=args.max_train,
-        ncpus=args.ncpus,
-        exclude=test_data,
-        filter_max_gpt_tokens=args.filter_max_gpt_tokens,
-    )
+    print(f"Collected {len(test_data)} test examples")
+
+    train_data = []
+    # resample and run again until we have enough
+    while len(train_data) < args.num_train:
+        print(f"Need {args.num_train - len(train_data)} more training examples")
+        gen_train_data = create_training_data(
+            conn,
+            num_train=args.num_train,
+            ncpus=args.ncpus,
+            exclude=test_data,
+            filter_max_gpt_tokens=args.filter_max_gpt_tokens,
+        )
+        train_data.extend(gen_train_data)
+
+    train_data = train_data[:args.num_train]
+
 
     for (subset_progs, name) in zip([test_data, train_data],
                                     ["test", "train"]):
