@@ -20,6 +20,8 @@ from repair.utils import (BenchmarkRunner, RepairEngine, gcc_compile,
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
+CODET5_VERSION = "Salesforce/codet5-small"
+
 
 class BaseCodeT5Repair(RepairEngine, BenchmarkRunner):
 
@@ -31,7 +33,9 @@ class BaseCodeT5Repair(RepairEngine, BenchmarkRunner):
         all_sources = [t.source for t in cases]
         if kwargs.get("verbose", False):
             # show progress bar, may help if slow (i.e. no gpu)
-            predictions = [self.repair(s, **kwargs)[0] for s in tqdm.tqdm(all_sources)]
+            predictions = [
+                self.repair(s, **kwargs)[0] for s in tqdm.tqdm(all_sources)
+            ]
         else:
             predictions = self.repair(all_sources, **kwargs)
         return [[p["repair"] for p in group] for group in predictions]
@@ -43,10 +47,8 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
     """
 
     def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            'Salesforce/codet5-base')
-        self.model = T5ForConditionalGeneration.from_pretrained(
-            'Salesforce/codet5-base')
+        self.tokenizer = AutoTokenizer.from_pretrained(CODET5_VERSION)
+        self.model = T5ForConditionalGeneration.from_pretrained(CODET5_VERSION)
         self.model = self.model.to(get_torch_device())
         self.model.eval()
 
@@ -169,10 +171,14 @@ def _load_labeled_dataset_tokenized(
     cases: List[RepairTaskRecord],
     tokenizer: Any,
     max_length: Optional[int] = None,
+    task_prefix: Optional[str] = None,
 ):
     source_data, target_data = zip(*[[case.source, case.target]
                                      for case in cases])
     assert not any(e is None for e in target_data), "All data must be labeled"
+    # add a "Fix prefix" so that fine-tuned model knows to "switch" tasks
+    if task_prefix is not None:
+        source_data = [task_prefix + source for source in source_data]
     encoded_source = tokenizer(
         source_data,
         return_tensors='pt',
@@ -194,11 +200,10 @@ def _load_labeled_dataset_tokenized(
 
 class CodeT5FineTunedRepair(BaseCodeT5Repair):
 
-    def __init__(self, fine_tuned_path=None):
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            'Salesforce/codet5-base')
-        self.model = T5ForConditionalGeneration.from_pretrained(
-            'Salesforce/codet5-base')
+    def __init__(self, fine_tuned_path=None, task_prefix=None):
+        self.tokenizer = AutoTokenizer.from_pretrained(CODET5_VERSION)
+        self.model = T5ForConditionalGeneration.from_pretrained(CODET5_VERSION)
+        self.task_prefix = "Fix C: " if task_prefix is None else task_prefix
 
         if fine_tuned_path is not None:
             print(f"Loading fine tuned model from {fine_tuned_path}")
@@ -216,6 +221,8 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         else:
             assert isinstance(code, list) and isinstance(code[0], str)
             str_inputs = code
+
+        str_inputs = [self.task_prefix + s for s in str_inputs]
 
         num_inputs = len(str_inputs)
         # run as batch with codet5
@@ -265,7 +272,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         adam_epsilon=1e-8,
         warmup_steps=5,
         gradient_accumulation_steps=1,
-        summary_dir=None,
+        log_dir=None,
         checkpoint_path=None,
     ):
         # TODO: put in reference to where we took original code from
@@ -281,14 +288,17 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
 
         # TODO: fix up tensorboard setup
         tb_writer = None
-        if summary_dir is not None:
-            tb_writer = SummaryWriter(summary_dir)
+        if log_dir is not None:
+            tb_writer = SummaryWriter(log_dir)
 
         # Prepare training data loader
         if train_data is None:
             train_data = get_train_data()
         train_dataset = _load_labeled_dataset_tokenized(
-            train_data, self.tokenizer)
+            train_data,
+            self.tokenizer,
+            task_prefix=self.task_prefix,
+        )
         train_sampler = RandomSampler(train_dataset)
         train_dataloader = DataLoader(train_dataset,
                                       sampler=train_sampler,
@@ -330,6 +340,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         print(f"  Batch num = {np.ceil(train_example_num / batch_size)}")
         print(f"  Num epoch = {num_epochs}")
 
+        global_step = 0
         for cur_epoch in range(0, num_epochs):
             bar = tqdm.tqdm(train_dataloader,
                             total=len(train_dataloader),
@@ -352,8 +363,9 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
 
+                global_step += 1
                 if tb_writer is not None:
-                    tb_writer.add_scalar('batch_loss', loss.item(), step)
+                    tb_writer.add_scalar('batch_loss', loss.item(), global_step)
 
                 if gradient_accumulation_steps > 1:
                     loss = loss / gradient_accumulation_steps

@@ -8,3 +8,4 @@ tqdm >= 4.64.1
 transformers >= 4.25.1
 tiktoken >= 0.1.2
 torch >= 1.13.1
+tensorboard >= 2.11.2
