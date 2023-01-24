@@ -14,9 +14,11 @@ Store in `./data/`
 ```bash
 python -m virtualenv env/
 source env/bin/activate
-pip install -r requirements.txt
-pip install -e .
+bash install.sh
 ```
+
+
+
 
 
 # Sources
@@ -37,19 +39,16 @@ note = "[Online; accessed 01-08-2023]"
 }
 
 
+for C99 grammar
+https://gist.github.com/codebrainz/2933703
+
 # TODOs:
-* Finalize CodeT5 fine tuning section
-    - Tensorboard fix (and visualize in notebook)
-    - Run on collab
-    - Upload finetuned model for us
+* Fix collab setup
+* Run final fine-tuning run and store model in folder as well
+* Adapt GRMTOOLs .l and .y 
 * Add text
-* Add grmtools section: (need to add C .y file and then can play with it, extra for students would be
-to turn parser recovery suggestion into repair, and run in benchmark)
 * Clean up tutorial and add references/pointers for more problems
 * Add tests
-* Setup skeleton for fine-tuning CodeBERT (to perform target similarity tuning)
 * Any other "stretch" task
-* Pin versions of libs
-* Try out in colab
 
 # FIXME: are locations participants can try some extensions :)

@@ -20,7 +20,7 @@ from repair.utils import (BenchmarkRunner, RepairEngine, gcc_compile,
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-CODET5_VERSION = "Salesforce/codet5-small"
+DEFAULT_CODET5_VERSION = "Salesforce/codet5-small"
 
 
 class BaseCodeT5Repair(RepairEngine, BenchmarkRunner):
@@ -34,7 +34,7 @@ class BaseCodeT5Repair(RepairEngine, BenchmarkRunner):
         if kwargs.get("verbose", False):
             # show progress bar, may help if slow (i.e. no gpu)
             predictions = [
-                self.repair(s, **kwargs)[0] for s in tqdm.tqdm(all_sources)
+                self.repair(s, **kwargs) for s in tqdm.tqdm(all_sources)
             ]
         else:
             predictions = self.repair(all_sources, **kwargs)
@@ -46,9 +46,10 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
     https://arxiv.org/pdf/2207.08281.pdf
     """
 
-    def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(CODET5_VERSION)
-        self.model = T5ForConditionalGeneration.from_pretrained(CODET5_VERSION)
+    def __init__(self, model_version=None):
+        self.model_version = DEFAULT_CODET5_VERSION if model_version is None else model_version
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_version)
+        self.model = T5ForConditionalGeneration.from_pretrained(self.model_version)
         self.model = self.model.to(get_torch_device())
         self.model.eval()
 
@@ -107,8 +108,10 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
         return code
 
     def repair(self, code: Union[str, List[str]], **kwargs):
+        single_program = False
         if isinstance(code, str):
             str_inputs = [code]
+            single_program = True
         else:
             assert isinstance(code, list) and isinstance(code[0], str)
             str_inputs = code
@@ -164,6 +167,8 @@ class CodeT5ClozeRepair(BaseCodeT5Repair):
                                                     mask_token_map)
                 acc.append({"repair": filled_code})
             results.append(acc)
+        if single_program:
+            results = results[0]
         return results
 
 
@@ -200,9 +205,10 @@ def _load_labeled_dataset_tokenized(
 
 class CodeT5FineTunedRepair(BaseCodeT5Repair):
 
-    def __init__(self, fine_tuned_path=None, task_prefix=None):
-        self.tokenizer = AutoTokenizer.from_pretrained(CODET5_VERSION)
-        self.model = T5ForConditionalGeneration.from_pretrained(CODET5_VERSION)
+    def __init__(self, model_version=None, fine_tuned_path=None, task_prefix=None):
+        self.model_version = DEFAULT_CODET5_VERSION if model_version is None else model_version
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_version)
+        self.model = T5ForConditionalGeneration.from_pretrained(self.model_version)
         self.task_prefix = "Fix C: " if task_prefix is None else task_prefix
 
         if fine_tuned_path is not None:
@@ -216,8 +222,10 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         torch.save(self.model.state_dict(), checkpoint_path)
 
     def repair(self, code: Union[str, List[str]], **kwargs):
+        single_program = False
         if isinstance(code, str):
             str_inputs = [code]
+            single_program = True
         else:
             assert isinstance(code, list) and isinstance(code[0], str)
             str_inputs = code
@@ -259,13 +267,15 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
                 decoded = self.tokenizer.decode(seq, skip_special_tokens=True)
                 acc.append({"repair": decoded})
             results.append(acc)
+        if single_program:
+            results = results[0]
         return results
 
     def finetune(
         self,
         train_data=None,
         num_epochs=4,
-        batch_size=4,
+        batch_size=8,
         n_gpu=1,
         weight_decay=0.0,
         learning_rate=5e-5,
