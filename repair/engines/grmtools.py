@@ -11,10 +11,11 @@ from repair.utils import (
     RepairEngine,
     BenchmarkRunner,
     RepairTaskRecord,
+    wrt_root
 )
 
-LEX_FILE = "resources/mini-c99.l"
-YACC_FILE = "resources/mini-c99.y"
+LEX_FILE = wrt_root("resources/mini-c99.l")
+YACC_FILE = wrt_root("resources/mini-c99.y")
 
 
 class EditOp(Enum):
@@ -197,7 +198,7 @@ class GRMTRepair(RepairEngine, BenchmarkRunner):
             logs = _run_nimbleparse(code)
             edit_seqs = _parse_nimbleparse_logs(logs)
             if len(edit_seqs) > 0:
-                # note that because locations can change based on 
+                # note that because locations can change based on
                 # repair, it is easier to run nimbleparse multiple
                 # times after making the first seq of edits, rather`
                 # than try to keep locations consistent throughout
@@ -209,7 +210,7 @@ class GRMTRepair(RepairEngine, BenchmarkRunner):
                 kwargs["max_depth"] = max_depth
                 # call with newly changed code
                 return self.repair(code, **kwargs)
-    
+
             # FIXME: consider applying a C formatter to make code nicer
             return [{"repair": code}]
         except Exception as err:

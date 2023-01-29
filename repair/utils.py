@@ -17,17 +17,23 @@ import pandas as pd
 import zss
 import tqdm
 
+def get_project_root():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+def wrt_root(p):
+    return os.path.join(get_project_root(), p)
+
 # Some defaults
 # limit on token edit distance between code pairs
 MAX_TOKEN_EDIT_DISTANCE = 5
 # to avoid super slow queries
 MAX_NUM_GPT_TOKENS = 200
 # compiled C parser from tree sitter
-TREE_SITTER_LIB = "resources/cparser.so"
+TREE_SITTER_LIB = wrt_root("resources/cparser.so")
 # tree sitter parser instance
 TREE_SITTER_PARSER = None
 # folder with all .pkl data files
-DATA_FOLDER = "data/"
+DATA_FOLDER = wrt_root("data/")
 # some functionality is limited when debugging (just for author dev)
 DEBUG = True
 
@@ -62,6 +68,7 @@ def to_tmp_cfile(code):
         yield file_obj.name
     finally:
         os.remove(file_obj.name)
+
 
 
 # based on https://bitbucket.org/iiscseal/deepfix/src/master/util/helpers.py
