@@ -25,3 +25,4 @@ source install.sh
 * Fix collab setup
 * Run final fine-tuning run and store model in folder as well
 
+https://drive.google.com/file/d/1V5sRePMY6D3IEaj3mMaIOYsp_JA6Apy6/view?usp=share_link
