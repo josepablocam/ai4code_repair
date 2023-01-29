@@ -16,6 +16,7 @@ from repair.utils import (
 
 LEX_FILE = wrt_root("resources/mini-c99.l")
 YACC_FILE = wrt_root("resources/mini-c99.y")
+NIMBLEPARSE = wrt_root("resources/grmtools/target/release/nimbleparse")
 # seconds after which to timeout to avoid long running nimbleparse cases
 DEFAULT_TIMEOUT = 5
 # iterative calls to nimbleparse
@@ -182,7 +183,7 @@ def _run_nimbleparse(code) -> str:
         log_output = ""
         try:
             subprocess.check_output(
-                ["nimbleparse", "-q", LEX_FILE, YACC_FILE, path],
+                [NIMBLEPARSE, "-q", LEX_FILE, YACC_FILE, path],
                 stderr=subprocess.STDOUT,
                 timeout=DEFAULT_TIMEOUT,
             )

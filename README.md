@@ -43,12 +43,10 @@ for C99 grammar
 https://gist.github.com/codebrainz/2933703
 
 # TODOs:
-* Fix collab setup
-* Run final fine-tuning run and store model in folder as well
-* Adapt GRMTOOLs .l and .y 
 * Add text
 * Clean up tutorial and add references/pointers for more problems
-* Add tests
-* Any other "stretch" task
+* Fix collab setup
+* Run final fine-tuning run and store model in folder as well
+* Final run of tutorial and share with co-organizers
 
 # FIXME: are locations participants can try some extensions :)
