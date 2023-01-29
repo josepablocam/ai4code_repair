@@ -1,3 +1,37 @@
+%epp "LESS" "<"
+%epp "GREATER" ">"
+%epp "LE" "<="
+%epp "GE" ">="
+%epp "EQ" "=="
+%epp "NEQ" "!="
+%epp "ASSIGN" "="
+%epp "PLUS" "+"
+%epp "INC_OP" "++"
+%epp "MINUS" "-"
+%epp "DEC_OP" "--"
+%epp "MULTIPLY" "*"
+%epp "DIVIDE" "/"
+%epp "MOD" "%"
+%epp "NOT" "!"
+//%epp "PLUSEQ" "+="
+//%epp "MINUSEQ" "-="
+//%epp "MULTEQ" "*="
+//%epp "DIVEQ" "/="
+//%epp "MODEQ" "%="
+%epp "AMPERSAND" "&"
+//%epp "BITWISE_OR" "|"
+//%epp "BITWISE_XOR" "^"
+%epp "LOGICAL_AND" "&&"
+%epp "LOGICAL_OR" "||"
+//%epp "QUESTION" "?"
+%epp "LEFT_PAREN" "("
+%epp "RIGHT_PAREN" ")"
+%epp "LEFT_BRACE" "{"
+%epp "RIGHT_BRACE" "}"
+%epp "LEFT_BRACKET" "["
+%epp "RIGHT_BRACKET" "]"
+%epp "SEMICOLON" ";"
+%epp "COMMA" "COMMA" // DO NOT CHANGE
 %%
 
 program : declaration_list;
@@ -95,10 +129,10 @@ assign:
     ;
 
 for_statement:
-    "FOR" "LEFT_PAREN" expression "SEMICOLON"  expression "SEMICOLON"  expression "RIGHT_PAREN" statement
-    | "FOR" "LEFT_PAREN" assign "SEMICOLON"  expression "SEMICOLON"  expression "RIGHT_PAREN" statement
+    "FOR" "LEFT_PAREN" expression_or_assign "SEMICOLON"  expression "SEMICOLON"  expression_or_assign "RIGHT_PAREN" statement
 ;
 
+expression_or_assign: expression | assigns;
 
 expression:
     "ID"

@@ -15,6 +15,7 @@ import torch
 from tree_sitter import Language, Parser
 import pandas as pd
 import zss
+import tqdm
 
 # Some defaults
 # limit on token edit distance between code pairs
@@ -206,7 +207,7 @@ def run_basic_annotation(predicted: List[List[str]], buggy: List[str]):
     annotations = []
     for preds, buggy in zip(predicted, buggy):
         annot = []
-        for p in preds:
+        for p in tqdm.tqdm(preds):
             compile_result = gcc_compile(p)
             # FIXME: consider how this might change if we use a different
             # distance function (e.g. `tree_edit_distance`) and/or threshold
