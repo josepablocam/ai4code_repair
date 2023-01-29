@@ -311,18 +311,18 @@ def compare_results(system_and_annotated_predictions: Dict[str, List[List[Predic
         results_per_system[system] = ixs
     
     results = {}
-    # solved by each syste,
+    # solved by each system
     results.update(results_per_system)
     # solved by intersection and union of systems
-    results['intersection'] = sorted(set.intersection(*[set(ixs) for ixs in results_per_system.values()]))
-    results['union'] = sorted(set.union(*[set(ixs) for ixs in results_per_system.values()]))
+    results['intersection'] = sorted(set.intersection(*map(set, results_per_system.values())))
+    results['union'] = sorted(set.union(*map(set, results_per_system.values())))
 
     # solved exclusively by each system
     for system, ixs in results_per_system.items():
         system_exclusive = system + "-exclusive"
         # solved by all other systems
-        others = set([v for k, v in results_per_system.items() for vs in v if k != system])
-        exclusive_ixs = set(ixs).difference(others)
+        other_solved = set([i for other_system, other_ixs in results_per_system.items() for i in other_ixs if other_system != system])
+        exclusive_ixs = set(ixs).difference(other_solved)
         results[system_exclusive] = sorted(exclusive_ixs)
 
     return results

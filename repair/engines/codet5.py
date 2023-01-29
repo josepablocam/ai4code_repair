@@ -255,7 +255,6 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
                                                 kwargs.get("num_beams", 3)),
                 early_stopping=kwargs.get("early_stopping", True),
             )
-            # TODO: check better reshaping
             batched_generated = generated.reshape(num_inputs, -1,
                                                   generated.shape[-1])
 
@@ -285,8 +284,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         log_dir=None,
         checkpoint_path=None,
     ):
-        # TODO: put in reference to where we took original code from
-        # this is a simplified version
+        # this is a simplified version OF https://github.com/salesforce/CodeT5/blob/main/run_gen.py
         # FIXME: add in validation and save best checkpoint rather than take last
         t0 = time.time()
 
@@ -296,7 +294,6 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
             # for DataParallel
             model = torch.nn.DataParallel(model)
 
-        # TODO: fix up tensorboard setup
         tb_writer = None
         if log_dir is not None:
             tb_writer = SummaryWriter(log_dir)
