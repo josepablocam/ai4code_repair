@@ -1,52 +1,27 @@
 # MIT AI4Code IAP Repair Tutorial
 
-TODO: write
+This tutorial is meant to be run on Google's collab. If you'd like to run locally, you should
+be on a *nix system (and this was tested on Ubuntu 20.04 via WSL.)
 
 
 # Setup
-Run in *nix (test in WSL)
+Download data folder from https://drive.google.com/drive/folders/1U25kzt8I2-pnDVmzPNs8s4o7h_ePfjL1?usp=sharing (or do so by executing
+notebook).
 
-Download data folder from  https://drive.google.com/drive/folders/1lJUFDmIcXu_ZcOUKBdY2iSvVT4_PIKZc?usp=sharing
-
-Store in `./data/`
-
+Create a virtual environment and setup installation.
 
 ```bash
 python -m virtualenv env/
 source env/bin/activate
-bash install.sh
+source install.sh
 ```
 
-
-
-
-
-# Sources
-
-* For C syntax repair data
-wget https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip -o deepfix.zip
-unzip deepfix.zip
-mv prutor*/*.gz .
-gunzip *.gz
-
-https://bitbucket.org/iiscseal/deepfix/src/master/
-@misc{deepfix2017repository,
-author = {Gupta, Rahul and Pal, Soham and Kanade, Aditya and Shevade, Shirish},
-title = "DeepFix: Fixing Common C Language Errors by Deep Learning",
-year = "2017",
-url = "http://www.iisc-seal.net/deepfix",
-note = "[Online; accessed 01-08-2023]"
-}
-
-
-for C99 grammar
-https://gist.github.com/codebrainz/2933703
+# Cites
+* We use the DeepFix dataset, courtesy of Gupta et al (Gupta, Rahul, et al. "Deepfix: Fixing common c language errors by deep learning." Proceedings of the aaai conference on artificial intelligence. Vol. 31. No. 1. 2017.), available for download at [https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip](https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip)
+* Some of our utility code is also implemented based on code snippets in the [DeepFix repository](https://bitbucket.org/iiscseal/deepfix/src/master/)
 
 # TODOs:
-* Add text
-* Clean up tutorial and add references/pointers for more problems
+* Finish [TODO] and [CITE] places in tutorial text
 * Fix collab setup
 * Run final fine-tuning run and store model in folder as well
-* Final run of tutorial and share with co-organizers
 
-# FIXME: are locations participants can try some extensions :)
