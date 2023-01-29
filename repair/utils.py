@@ -35,7 +35,7 @@ TREE_SITTER_PARSER = None
 # folder with all .pkl data files
 DATA_FOLDER = wrt_root("data/")
 # some functionality is limited when debugging (just for author dev)
-DEBUG = True
+DEBUG = False
 
 
 @dataclass
