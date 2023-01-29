@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from contextlib import contextmanager
@@ -297,3 +298,31 @@ def run_benchmark(system: BenchmarkRunner, **kwargs):
 
 def get_torch_device():
     return "cuda:0" if torch.cuda.is_available() else "cpu"
+
+def compare_results(system_and_annotated_predictions: Dict[str, List[List[PredictionAnnotation]]], top_k=1, criteria: Optional[Callable[[PredictionAnnotation], bool]]= None) -> Dict[str, List[int]]:
+    if criteria is None:
+        criteria = lambda p: p.compile_result.ok and p.distance <= MAX_TOKEN_EDIT_DISTANCE
+
+    results_per_system = {}
+    # solved by each system
+    for system, annotated_predictions in system_and_annotated_predictions.items():
+        outcomes = [any([criteria(p) for p in task[:top_k]]) for task in annotated_predictions]
+        ixs = [ix for ix, passed in enumerate(outcomes) if passed]
+        results_per_system[system] = ixs
+    
+    results = {}
+    # solved by each syste,
+    results.update(results_per_system)
+    # solved by intersection and union of systems
+    results['intersection'] = sorted(set.intersection(*[set(ixs) for ixs in results_per_system.values()]))
+    results['union'] = sorted(set.union(*[set(ixs) for ixs in results_per_system.values()]))
+
+    # solved exclusively by each system
+    for system, ixs in results_per_system.items():
+        system_exclusive = system + "-exclusive"
+        # solved by all other systems
+        others = set([v for k, v in results_per_system.items() for vs in v if k != system])
+        exclusive_ixs = set(ixs).difference(others)
+        results[system_exclusive] = sorted(exclusive_ixs)
+
+    return results
