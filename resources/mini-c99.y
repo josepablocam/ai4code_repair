@@ -13,17 +13,17 @@
 %epp "DIVIDE" "/"
 %epp "MOD" "%"
 %epp "NOT" "!"
-//%epp "PLUSEQ" "+="
-//%epp "MINUSEQ" "-="
-//%epp "MULTEQ" "*="
-//%epp "DIVEQ" "/="
-//%epp "MODEQ" "%="
+%epp "PLUSEQ" "+="
+%epp "MINUSEQ" "-="
+%epp "MULTEQ" "*="
+%epp "DIVEQ" "/="
+%epp "MODEQ" "%="
 %epp "AMPERSAND" "&"
-//%epp "BITWISE_OR" "|"
-//%epp "BITWISE_XOR" "^"
+%epp "BITWISE_OR" "|"
+%epp "BITWISE_XOR" "^"
 %epp "LOGICAL_AND" "&&"
 %epp "LOGICAL_OR" "||"
-//%epp "QUESTION" "?"
+%epp "QUESTION" "?"
 %epp "LEFT_PAREN" "("
 %epp "RIGHT_PAREN" ")"
 %epp "LEFT_BRACE" "{"
@@ -31,7 +31,9 @@
 %epp "LEFT_BRACKET" "["
 %epp "RIGHT_BRACKET" "]"
 %epp "SEMICOLON" ";"
-%epp "COMMA" "COMMA" // DO NOT CHANGE
+%epp "COLON" ":"
+%epp "COMMA" ","
+
 %%
 
 program : declaration_list;
@@ -43,7 +45,7 @@ declaration_list: declaration_or_def declaration_list | declaration_or_def;
 declaration_or_def: 
     function_def
     | var_declaration
-    | assign "SEMICOLON"
+    | assigns "SEMICOLON"
     ;
 
 
@@ -100,7 +102,7 @@ lvalues:
 lvalue:
     "ID"
     | pointer_access_lval
-    | lvalue_arr
+    | arr
     | "LEFT_PAREN" lvalue "RIGHT_PAREN"
     ;
 
@@ -109,7 +111,7 @@ pointer_access_lval:
     | "MULTIPLY" pointer_access_lval
     ;
 
-lvalue_arr: "ID" arr_sizes;
+arr: "ID" arr_sizes;
 
 arr_sizes: 
     arr_size
@@ -117,16 +119,24 @@ arr_sizes:
 
 arr_size: 
     "LEFT_BRACKET" "RIGHT_BRACKET"
-    | "LEFT_BRACKET" "NUM" "RIGHT_BRACKET"
-    | "LEFT_BRACKET" "ID" "RIGHT_BRACKET"
+    | "LEFT_BRACKET" expression "RIGHT_BRACKET"
     ;
 
-assigns: assign | assign "COMMA" assigns;
+assigns: single_assign | single_assign "COMMA" assigns;
 
-assign:
-    type lvalues "ASSIGN" expression
-    | lvalues "ASSIGN" expression
+single_assign:
+    type lvalues assign_op expression
+    | lvalues assign_op expression
     ;
+
+assign_op:
+    "ASSIGN"
+   | "PLUSEQ"
+   | "MINUSEQ"
+   | "MULTEQ"
+   | "DIVEQ"
+   | "MODEQ"
+   ;
 
 for_statement:
     "FOR" "LEFT_PAREN" expression_or_assign "SEMICOLON"  expression "SEMICOLON"  expression_or_assign "RIGHT_PAREN" statement
@@ -142,6 +152,7 @@ expression:
     | "ID"
     | "NOT" expression
     | "MINUS" expression
+    | arr
     | "AMPERSAND" expression // address
     | pointer_access_rval
     | "LEFT_PAREN" expression "RIGHT_PAREN"
@@ -159,6 +170,10 @@ expression:
     | expression "NEQ" expression
     | expression "LOGICAL_AND" expression
     | expression "LOGICAL_OR" expression
+    | expression "BITWISE_OR" expression
+    | expression "BITWISE_XOR" expression
+    | expression "AMPERSAND" expression
+    | expression "QUESTION" expression "COLON" expression
     | "ID" "INC_OP"
     | "ID" "DEC_OP"
     | "INC_OP" "ID"

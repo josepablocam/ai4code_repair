@@ -32,11 +32,11 @@ return "RETURN"
 \*=    "MULTEQ"
 /=     "DIVEQ"
 %=      "MODEQ"
-&      "AMPERSAND"
-|      "BITWISE_OR"
-^      "BITWISE_XOR"
 &&     "LOGICAL_AND"
-||     "LOGICAL_OR"
+\|\|     "LOGICAL_OR"
+&      "AMPERSAND"
+\|      "BITWISE_OR"
+\^      "BITWISE_XOR"
 \?       "QUESTION"
 \(      "LEFT_PAREN"
 \)      "RIGHT_PAREN"
@@ -45,12 +45,14 @@ return "RETURN"
 \[      "LEFT_BRACKET"
 \]      "RIGHT_BRACKET"
 ;         "SEMICOLON"
+:         "COLON"
 ,         "COMMA"
-[0-9]+  "NUM"
-"(?:\\\\|\\"|[^"\n])*" "STRING_LITERAL"
+[0-9]+(\.[0-9]*)?    "NUM"
+("(?:\\\\|\\"|[^"\n])*")|('(?:\\\\|\\'|[^'\n])*') "STRING_LITERAL"
 [A-Za-z_]([A-Za-z_]|[0-9])* "ID"
 [ \t\n\r]+    ; 
 /[*].*?[*]/    ;
 //[^\n]*?$   ;
 #include[^\n]*?$ ;
+#define[^\n]*?$ ;
 %%

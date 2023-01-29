@@ -16,6 +16,10 @@ from repair.utils import (
 
 LEX_FILE = wrt_root("resources/mini-c99.l")
 YACC_FILE = wrt_root("resources/mini-c99.y")
+# seconds after which to timeout to avoid long running nimbleparse cases
+DEFAULT_TIMEOUT = 5
+# iterative calls to nimbleparse
+DEFAULT_MAX_DEPTH = 5
 
 
 class EditOp(Enum):
@@ -172,27 +176,35 @@ def _apply_edit(code: str, i: int, step: GRMTEdit, context=None) -> str:
 
 def _run_nimbleparse(code) -> str:
     """
-    Return repair sequence logs if any (empty if nimbleparse succeeds)
+    Return repair sequence logs if any (empty if nimbleparse succeeds or times out)
     """
     with to_tmp_cfile(code) as path:
         log_output = ""
         try:
             subprocess.check_output(
                 ["nimbleparse", "-q", LEX_FILE, YACC_FILE, path],
-                stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as output:
-            log_output = output.stdout.decode()
+                stderr=subprocess.STDOUT,
+                timeout=DEFAULT_TIMEOUT,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as output:
+            if output.stdout is not None:
+                log_output = output.stdout.decode()
         return log_output
 
 
-DEBUG = True
+DEBUG = False
 
 
 class GRMTRepair(RepairEngine, BenchmarkRunner):
+    """
+    Repair engine based on applying GRMTOOLs error recovery edits.
+    Note that error recovery edits have non-determinism in their
+    sequencing (they are all guaranteed to be minimal edit distance)
+    """
 
     def repair(self, code: str, **kwargs) -> List[Dict[str, Any]]:
         curr_depth = kwargs.get("_curr_depth", 0)
-        max_depth = kwargs.get("max_depth", 3)
+        max_depth = kwargs.get("max_depth", DEFAULT_MAX_DEPTH)
 
         try:
             logs = _run_nimbleparse(code)

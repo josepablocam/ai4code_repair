@@ -212,9 +212,9 @@ class PredictionAnnotation(object):
 
 def run_basic_annotation(predicted: List[List[str]], buggy: List[str]):
     annotations = []
-    for preds, buggy in zip(predicted, buggy):
+    for preds, buggy in tqdm.tqdm(list(zip(predicted, buggy))):
         annot = []
-        for p in tqdm.tqdm(preds):
+        for p in preds:
             compile_result = gcc_compile(p)
             # FIXME: consider how this might change if we use a different
             # distance function (e.g. `tree_edit_distance`) and/or threshold
