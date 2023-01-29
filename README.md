@@ -3,8 +3,11 @@
 This tutorial is meant to be run on Google's collab. If you'd like to run locally, you should
 be on a *nix system (and this was tested on Ubuntu 20.04 via WSL.)
 
+You should navigate to [https://colab.research.google.com/](https://colab.research.google.com/)
+and pick to load the `*.ipynb` from github by pointing to the following URL [https://github.com/josepablocam/ai4code_repair](https://github.com/josepablocam/ai4code_repair).
 
-# Setup
+
+# Local Setup
 Download data folder from https://drive.google.com/drive/folders/1U25kzt8I2-pnDVmzPNs8s4o7h_ePfjL1?usp=sharing (or do so by executing
 notebook).
 
