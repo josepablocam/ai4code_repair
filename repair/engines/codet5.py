@@ -213,7 +213,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
 
         if fine_tuned_path is not None:
             print(f"Loading fine tuned model from {fine_tuned_path}")
-            self.model.load_state_dict(torch.load(fine_tuned_path))
+            self.model.load_state_dict(torch.load(fine_tuned_path, map_location=get_torch_device()))
 
         self.model = self.model.to(get_torch_device())
 

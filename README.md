@@ -17,7 +17,7 @@ messages until it is done, so you may want to be a bit patient.
 
 
 # Local Setup
-Download data folder from https://drive.google.com/drive/folders/1U25kzt8I2-pnDVmzPNs8s4o7h_ePfjL1?usp=sharing (or do so by executing
+Download data folder from https://drive.google.com/file/d/1V5sRePMY6D3IEaj3mMaIOYsp_JA6Apy6/view?usp=share_link (or do so by executing
 notebook).
 
 Create a virtual environment and setup installation.
