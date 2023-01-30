@@ -6,6 +6,15 @@ be on a *nix system (and this was tested on Ubuntu 20.04 via WSL.)
 You should navigate to [https://colab.research.google.com/](https://colab.research.google.com/)
 and pick to load the `*.ipynb` from github by pointing to the following URL [https://github.com/josepablocam/ai4code_repair](https://github.com/josepablocam/ai4code_repair).
 
+Once you do, you will want to set your runtime to have access to a GPU (otherwise some portions
+will be quite slow -- but doable, as long as you don't do the finetuning portion of 
+the tutorial).
+
+Go to `Runtime` > `Change runtime type` > `GPU` and then click `Connect`.
+
+Note that some of the setup is run using `%%bash` and colab seems to accumulate stdout
+messages until it is done, so you may want to be a bit patient.
+
 
 # Local Setup
 Download data folder from https://drive.google.com/drive/folders/1U25kzt8I2-pnDVmzPNs8s4o7h_ePfjL1?usp=sharing (or do so by executing

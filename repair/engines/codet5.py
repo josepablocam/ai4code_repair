@@ -309,7 +309,7 @@ class CodeT5FineTunedRepair(BaseCodeT5Repair):
         train_sampler = RandomSampler(train_dataset)
         train_dataloader = DataLoader(train_dataset,
                                       sampler=train_sampler,
-                                      batch_size=4,
+                                      batch_size=batch_size,
                                       pin_memory=False)
 
         # Prepare optimizer and schedule (linear warmup and decay)

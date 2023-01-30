@@ -14,6 +14,9 @@ export PATH=$PATH:$(readlink -f target/release)
 popd
 popd
 
+# install sqlite3
+apt install sqlite3
+
 # install our package
 echo "Setting up ai4code_repair"
 pip install -r requirements.txt

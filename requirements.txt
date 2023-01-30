@@ -10,3 +10,4 @@ tiktoken >= 0.1.2
 torch >= 1.13.1
 tensorboard<2.10,>=2.9
 gdown >= 4.6.0
+openai >= 0.26.0
