@@ -47,3 +47,6 @@ Below cites referenced in the tutorial itself.
 [6] Feng, Zhangyin, et al. "Codebert: A pre-trained model for programming and natural languages." arXiv preprint arXiv:2002.08155 (2020).
 
 [7] Johnson, Jeff, Matthijs Douze, and Hervé Jégou. "Billion-scale similarity search with gpus." IEEE Transactions on Big Data 7.3 (2019): 535-547.
+
+[8] Yasunaga, Michihiro, and Percy Liang. "Break-it-fix-it: Unsupervised learning for program repair." International Conference on Machine Learning. PMLR, 2021.
+
