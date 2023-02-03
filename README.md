@@ -15,7 +15,8 @@ Go to `Runtime` > `Change runtime type` > `GPU` and then click `Connect`.
 Note that some of the setup is run using `%%bash` and colab seems to accumulate stdout
 messages until it is done, so you may want to be a bit patient.
 
-
+# Known Issues
+* Inference isn't batched so any use of neural models is pretty slow -- I will try to batch at some point if I get a chance to put more time into this (otherwise, PRs welcomed).
 
 # Cites
 * We use the DeepFix dataset, courtesy of Gupta et al (Gupta, Rahul, et al. "Deepfix: Fixing common c language errors by deep learning." Proceedings of the aaai conference on artificial intelligence. Vol. 31. No. 1. 2017.), available for download at [https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip](https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip)
