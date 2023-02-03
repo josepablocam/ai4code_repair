@@ -16,17 +16,6 @@ Note that some of the setup is run using `%%bash` and colab seems to accumulate 
 messages until it is done, so you may want to be a bit patient.
 
 
-# Local Setup
-Download data folder from https://drive.google.com/file/d/1V5sRePMY6D3IEaj3mMaIOYsp_JA6Apy6/view?usp=share_link (or do so by executing
-notebook).
-
-Create a virtual environment and setup installation.
-
-```bash
-python -m virtualenv env/
-source env/bin/activate
-source install.sh
-```
 
 # Cites
 * We use the DeepFix dataset, courtesy of Gupta et al (Gupta, Rahul, et al. "Deepfix: Fixing common c language errors by deep learning." Proceedings of the aaai conference on artificial intelligence. Vol. 31. No. 1. 2017.), available for download at [https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip](https://www.cse.iitk.ac.in/users/karkare/prutor/prutor-deepfix-09-12-2017.zip)
