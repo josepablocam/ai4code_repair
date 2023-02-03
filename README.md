@@ -3,6 +3,8 @@
 This tutorial is meant to be run on Google colab. If you'd like to run locally, you should
 be on a *nix system (and this was tested on Ubuntu 20.04 via WSL.)
 
+The original version of this tutorial was given as part of the "AI for Code and Science" IAP (independent activities period) at MIT in Spring 2023.
+
 You should navigate to [https://colab.research.google.com/](https://colab.research.google.com/)
 and pick to load the `*.ipynb` from github by pointing to the following URL [https://github.com/josepablocam/ai4code_repair](https://github.com/josepablocam/ai4code_repair).
 
